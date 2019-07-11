@@ -5,8 +5,243 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TreeDataEditor"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525">
-    <Grid>
+        Title="Tree Data Editor" Height="347" Width="525" SizeToContent="Width">
+
+    <Window.Resources>
         
+        <!-- Стиль для элемента разворачивания / сворачивания строк вложенной структуры -->
+        <Style x:Key="TreeViewItemFocusVisual">
+            <Setter Property="Control.Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Rectangle/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ExpandCollapseToggleStyle" TargetType="{x:Type ToggleButton}">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Width" Value="19"/>
+            <Setter Property="Height" Value="13"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Path x:Name="ExpandPath"
+                  Margin="5 3 3 2"
+                  Fill="Black"
+                  Data="M 0 2 L 0 3 L 2 3 L 2 5 L 3 5 L 3 3 L 5 3 L 5 2 L 3 2 L 3 0 L 2 0 L 2 2 Z"/>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Data" TargetName="ExpandPath"
+                    Value="M 0 2 L 0 3 L 5 3 L 5 2 Z"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="TreeViewItemStyle" TargetType="{x:Type TreeViewItem}">
+            <Setter Property="FocusVisualStyle" Value="{StaticResource TreeViewItemFocusVisual}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type TreeViewItem}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition MinWidth="19" Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+                            <ToggleButton x:Name="Expander"
+                        Style="{StaticResource ExpandCollapseToggleStyle}"
+                        ClickMode="Press"
+                        IsChecked="{Binding Path=IsExpanded,
+                            RelativeSource={RelativeSource TemplatedParent}}"/>
+                            <Border Grid.Column="1" x:Name="Bd"
+                  SnapsToDevicePixels="true"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  Padding="{TemplateBinding Padding}">
+                                <ContentPresenter x:Name="PART_Header"
+                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              ContentSource="Header"/>
+                            </Border>
+                            <ItemsPresenter x:Name="ItemsHost" Grid.Column="1" Grid.ColumnSpan="2" Grid.Row="1"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="false">
+                                <Setter Property="Visibility" TargetName="ItemsHost" Value="Collapsed"/>
+                            </Trigger>
+                            <Trigger Property="HasItems" Value="false">
+                                <Setter Property="Visibility" TargetName="Expander" Value="Hidden"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="true">
+                                <Setter Property="Background" TargetName="Bd"
+                    Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                <Setter Property="Foreground"
+                    Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsSelected" Value="true"/>
+                                    <Condition Property="IsSelectionActive" Value="false"/>
+                                </MultiTrigger.Conditions>
+                                <Setter Property="Background" TargetName="Bd"
+                    Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"/>
+                                <Setter Property="Foreground"
+                    Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+                            </MultiTrigger>
+                            <Trigger Property="IsEnabled" Value="false">
+                                <Setter Property="Foreground"
+                    Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <!-- Таблица вывода иерархической структцры -->
+    <Grid Margin="10">
+        <Border BorderBrush="Black" BorderThickness="1">
+            <Border.Resources>
+                <!-- Стиль для элемента вывода значения таблицы -->
+                <Style x:Key="TextBlockStyle" TargetType="{x:Type TextBlock}">
+                    <Setter Property="Margin" Value="5 0 5 0"/>
+                </Style>
+                <!-- Стиль для элемента вывода названия столбцов таблицы -->
+                <Style x:Key="TextBlockBoldStyle" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockStyle}">
+                    <Setter Property="FontWeight" Value="Bold"/>
+                    <Setter Property="Margin" Value="10 0 10 0"/>
+                </Style>
+                <!-- Стиль для границы элемента вывода значения таблицы -->
+                <Style x:Key="ItemBorderStyle" TargetType="{x:Type Border}">
+                    <Setter Property="BorderBrush" Value="Gray"/>
+                    <Setter Property="BorderThickness" Value="0 0 0 1"/>
+                </Style>
+            </Border.Resources>
+
+            <!-- Содержание таблицы -->
+            <Grid Grid.IsSharedSizeScope="True">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition/>
+                </Grid.RowDefinitions>
+
+                <!-- Заголовок -->
+                <TreeViewItem Grid.Row="0" BorderThickness="1">
+                    <TreeViewItem.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition SharedSizeGroup="Contract"/>
+                                <!-- Место под два элемента ToggleButton -->
+                                <ColumnDefinition SharedSizeGroup="Toggle"/>
+                                <ColumnDefinition SharedSizeGroup="Toggle"/>
+                                <ColumnDefinition SharedSizeGroup="StartDate"/>
+                                <ColumnDefinition SharedSizeGroup="EndDate"/>
+                                <ColumnDefinition SharedSizeGroup="Retro"/>
+                                <ColumnDefinition SharedSizeGroup="RetroDistr"/>
+                                <ColumnDefinition SharedSizeGroup="Rku"/>
+                                <ColumnDefinition SharedSizeGroup="RkuDistr"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Контракт" Style="{StaticResource TextBlockBoldStyle}"/>
+                            <!-- Пустой TreeViewItem для резервирования места для ToggleButton в группе "Toggle" -->
+                            <TreeViewItem Grid.Column="1" Padding="0"/>
+                            <TextBlock Grid.Column="3" Text="Дата с" Style="{StaticResource TextBlockBoldStyle}"/>
+                            <TextBlock Grid.Column="4" Text="Дата по" Style="{StaticResource TextBlockBoldStyle}"/>
+                            <TextBlock Grid.Column="5" Text="Ретро" Style="{StaticResource TextBlockBoldStyle}"/>
+                            <TextBlock Grid.Column="6" Text="Ретро, дистр" Style="{StaticResource TextBlockBoldStyle}"/>
+                            <TextBlock Grid.Column="7" Text="РКУ" Style="{StaticResource TextBlockBoldStyle}"/>
+                            <TextBlock Grid.Column="8" Text="РКУ, дистр" Style="{StaticResource TextBlockBoldStyle}"/>
+                        </Grid>
+                    </TreeViewItem.Header>
+                </TreeViewItem>
+
+                <!-- Строки данных -->
+                <TreeView Grid.Row="1" ItemsSource="{Binding Contracts}" BorderBrush="Gray" BorderThickness="0 1 0 0" DataContext="{Binding}" ItemContainerStyle="{StaticResource TreeViewItemStyle}">
+                    <TreeView.ItemTemplate>
+
+                        <!-- Уровень 1 - место под два дочерних уровня -->
+                        <HierarchicalDataTemplate ItemsSource="{Binding Products}">
+
+                            <Border Style="{StaticResource ItemBorderStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition SharedSizeGroup="Contract"/>
+                                        <ColumnDefinition SharedSizeGroup="Toggle"/>
+                                        <ColumnDefinition SharedSizeGroup="Toggle"/>
+                                        <ColumnDefinition SharedSizeGroup="StartDate"/>
+                                        <ColumnDefinition SharedSizeGroup="EndDate"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <TextBlock Grid.Column="0" Text="{Binding FullName}" Style="{StaticResource TextBlockStyle}"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding StartDateStr}" Style="{StaticResource TextBlockStyle}"/>
+                                    <TextBlock Grid.Column="4" Text="{Binding EndDateStr}" Style="{StaticResource TextBlockStyle}"/>
+                                    <TextBlock Grid.Column="5" Text="{Binding Retro}" Style="{StaticResource TextBlockStyle}"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Уровень 2 - место под один дочерний уровень -->
+                            <HierarchicalDataTemplate.ItemTemplate>
+                                <HierarchicalDataTemplate ItemsSource="{Binding Conditions}">
+                                    <Border Style="{StaticResource ItemBorderStyle}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition SharedSizeGroup="Contract"/>
+                                                <ColumnDefinition/>
+                                                <ColumnDefinition SharedSizeGroup="Toggle"/>
+                                                <ColumnDefinition SharedSizeGroup="StartDate"/>
+                                                <ColumnDefinition SharedSizeGroup="EndDate"/>
+                                                <ColumnDefinition SharedSizeGroup="Retro"/>
+                                                <ColumnDefinition SharedSizeGroup="RetroDistr"/>
+                                                <ColumnDefinition SharedSizeGroup="Rku"/>
+                                                <ColumnDefinition SharedSizeGroup="RkuDistr"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding Name}" Style="{StaticResource TextBlockStyle}"/>
+                                            <TextBlock Grid.Column="5" Text="{Binding Retro}" Style="{StaticResource TextBlockStyle}"/>
+                                            <TextBlock Grid.Column="6" Text="{Binding RetroDistr}" Style="{StaticResource TextBlockStyle}"/>
+                                            <TextBlock Grid.Column="7" Text="{Binding Rku}" Style="{StaticResource TextBlockStyle}"/>
+                                            <TextBlock Grid.Column="8" Text="{Binding RkuDistr}" Style="{StaticResource TextBlockStyle}"/>
+                                        </Grid>
+                                    </Border>
+                                    
+                                    <!-- Уровень 3 - без дочерних уровней -->
+                                    <HierarchicalDataTemplate.ItemTemplate>
+                                        <HierarchicalDataTemplate ItemsSource="{Binding Conditions}">
+                                            <Border Style="{StaticResource ItemBorderStyle}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition SharedSizeGroup="Contract"/>
+                                                        <ColumnDefinition/>
+                                                        <ColumnDefinition/>
+                                                        <ColumnDefinition SharedSizeGroup="StartDate"/>
+                                                        <ColumnDefinition SharedSizeGroup="EndDate"/>
+                                                        <ColumnDefinition SharedSizeGroup="Retro"/>
+                                                        <ColumnDefinition SharedSizeGroup="RetroDistr"/>
+                                                        <ColumnDefinition SharedSizeGroup="Rku"/>
+                                                        <ColumnDefinition SharedSizeGroup="RkuDistr"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="{Binding Name}" Style="{StaticResource TextBlockStyle}"/>
+                                                    <TextBlock Grid.Column="5" Text="{Binding Retro}" Style="{StaticResource TextBlockStyle}"/>
+                                                    <TextBlock Grid.Column="6" Text="{Binding RetroDistr}" Style="{StaticResource TextBlockStyle}"/>
+                                                    <TextBlock Grid.Column="7" Text="{Binding Rku}" Style="{StaticResource TextBlockStyle}"/>
+                                                    <TextBlock Grid.Column="8" Text="{Binding RkuDistr}" Style="{StaticResource TextBlockStyle}"/>
+                                                </Grid>
+                                            </Border>
+                                        </HierarchicalDataTemplate>
+                                    </HierarchicalDataTemplate.ItemTemplate>
+                                </HierarchicalDataTemplate>
+                            </HierarchicalDataTemplate.ItemTemplate>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                </TreeView>
+            </Grid>
+        </Border>
     </Grid>
 </Window>
