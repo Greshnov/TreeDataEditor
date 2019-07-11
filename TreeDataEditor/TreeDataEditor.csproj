@@ -63,6 +63,10 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="DataModels\ConditionKind.cs" />
+    <Compile Include="DataModels\Product.cs" />
+    <Compile Include="DataModels\Contract.cs" />
+    <Compile Include="DataModels\TestData.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
