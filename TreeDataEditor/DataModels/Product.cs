@@ -6,7 +6,7 @@ namespace TreeDataEditor.DataModels
     /// <summary>
     /// Модель данных об артикуле / продукте
     /// </summary>
-    public class Product
+    public class Product : EntityBase
     {
         /// <summary>
         /// Артикул
@@ -16,23 +16,23 @@ namespace TreeDataEditor.DataModels
         /// <summary>
         /// Агрегированное значение Ретро по всем условиям
         /// </summary>
-        public int Retro { get { return Conditions.Sum(i => i.Retro); } }
+        public int? Retro { get { return Conditions.Sum(i => i.Retro); } }
 
         /// <summary>
         /// Агрегированное значение Ретро, дистр по всем условиям
         /// </summary>
-        public int RetroDistr { get { return Conditions.Sum(i => i.RetroDistr); } }
+        public int? RetroDistr { get { return Conditions.Sum(i => i.RetroDistr); } }
 
         /// <summary>
         /// Агрегированное значение РКУ по всем условиям
         /// </summary>
-        public int Rku { get { return Conditions.Sum(i => i.Rku); } }
+        public int? Rku { get { return Conditions.Sum(i => i.Rku); } }
 
         /// <summary>
         /// Агрегированное значение РКУ, дистр по всем условиям
         /// </summary>
-        public int RkuDistr { get { return Conditions.Sum(i => i.RkuDistr); } }
+        public int? RkuDistr { get { return Conditions.Sum(i => i.RkuDistr); } }
 
-        public List<ConditionKind> Conditions { get; set; }
+        public virtual List<ConditionKind> Conditions { get; set; }
     }
 }

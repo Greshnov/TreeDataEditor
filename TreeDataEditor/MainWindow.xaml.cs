@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Data.Entity;
+using System.Windows;
 using TreeDataEditor.DataModels;
 
 namespace TreeDataEditor
@@ -8,12 +9,37 @@ namespace TreeDataEditor
     /// </summary>
     public partial class MainWindow : Window
     {
+        /// <summary>
+        /// Контекст БД
+        /// </summary>
+        DataBaseContext db;
+
         public MainWindow()
         {
             InitializeComponent();
+
+            // Тестовые данные (локальные)
+            // DataContext = new { Contracts = TestData.Contracts };
             
-            // Тестовые данные
-            DataContext = new { Contracts = TestData.Contracts };
+            // Создание контекста БД
+            db = new DataBaseContext();
+            // Загрузка данных из БД
+            db.Contracts.Load();
+            // Привязка к контексту данных приложени (для отображения)
+            DataContext = new { Contracts = db.Contracts.Local.ToBindingList() };
+            
+            this.Closing += MainWindow_Closing;
+        }
+
+        /// <summary>
+        /// Обработчик события закрытия окна
+        /// </summary>
+        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            // Освобождение ресурсов контекста БД
+            if (db != null)
+                db.Dispose();
+        }
 
         /// <summary>
         /// Обработчик выбора строки в списке контрактов

@@ -6,7 +6,7 @@ namespace TreeDataEditor.DataModels
     /// <summary>
     /// Модель данных о контракте
     /// </summary>
-    public class Contract
+    public class Contract : EntityBase
     {
         /// <summary>
         /// Номер контракта
@@ -41,7 +41,7 @@ namespace TreeDataEditor.DataModels
         /// <summary>
         /// Артикулы по контракту
         /// </summary>
-        public List<Product> Products { get; set; }
+        public virtual List<Product> Products { get; set; }
 
         /// <summary>
         /// Полное название контракта
